@@ -11,6 +11,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use \DateTime;
 
 class CleanUpCommand extends Command
 {
@@ -45,6 +46,8 @@ class CleanUpCommand extends Command
 
         $this->cleanUpExpiredJobs($em, $con, $input);
         $this->collectStaleJobs($em);
+
+        return 0;
     }
 
     private function collectStaleJobs(EntityManager $em)
@@ -59,7 +62,10 @@ class CleanUpCommand extends Command
     }
 
     /**
-     * @return Job[]
+     * @param EntityManager $em
+     * @return \Generator
+     * @throws \Doctrine\Common\Persistence\Mapping\MappingException
+     * @throws \Doctrine\ORM\NonUniqueResultException
      */
     private function findStaleJobs(EntityManager $em)
     {
@@ -73,7 +79,7 @@ class CleanUpCommand extends Command
                                       WHERE j.state = :running AND j.workerName IS NOT NULL AND j.checkedAt < :maxAge
                                                 AND j.id NOT IN (:excludedIds)")
                 ->setParameter('running', Job::STATE_RUNNING)
-                ->setParameter('maxAge', new \DateTime('-5 minutes'), 'datetime')
+                ->setParameter('maxAge', new DateTime('-5 minutes'), 'datetime')
                 ->setParameter('excludedIds', $excludedIds)
                 ->setMaxResults(1)
                 ->getOneOrNullResult();
@@ -142,7 +148,7 @@ class CleanUpCommand extends Command
     {
         $succeededJobs = function(array $excludedIds) use ($em, $input) {
             return $em->createQuery("SELECT j FROM JMSJobQueueBundle:Job j WHERE j.closedAt < :maxRetentionTime AND j.originalJob IS NULL AND j.state = :succeeded AND j.id NOT IN (:excludedIds)")
-                ->setParameter('maxRetentionTime', new \DateTime('-'.$input->getOption('max-retention-succeeded')))
+                ->setParameter('maxRetentionTime', new DateTime('-'.$input->getOption('max-retention-succeeded')))
                 ->setParameter('excludedIds', $excludedIds)
                 ->setParameter('succeeded', Job::STATE_FINISHED)
                 ->setMaxResults(100)
@@ -152,7 +158,7 @@ class CleanUpCommand extends Command
 
         $finishedJobs = function(array $excludedIds) use ($em, $input) {
             return $em->createQuery("SELECT j FROM JMSJobQueueBundle:Job j WHERE j.closedAt < :maxRetentionTime AND j.originalJob IS NULL AND j.id NOT IN (:excludedIds)")
-                ->setParameter('maxRetentionTime', new \DateTime('-'.$input->getOption('max-retention')))
+                ->setParameter('maxRetentionTime', new DateTime('-'.$input->getOption('max-retention')))
                 ->setParameter('excludedIds', $excludedIds)
                 ->setMaxResults(100)
                 ->getResult();
@@ -161,7 +167,7 @@ class CleanUpCommand extends Command
 
         $canceledJobs = function(array $excludedIds) use ($em, $input) {
             return $em->createQuery("SELECT j FROM JMSJobQueueBundle:Job j WHERE j.state = :canceled AND j.createdAt < :maxRetentionTime AND j.originalJob IS NULL AND j.id NOT IN (:excludedIds)")
-                ->setParameter('maxRetentionTime', new \DateTime('-'.$input->getOption('max-retention')))
+                ->setParameter('maxRetentionTime', new DateTime('-'.$input->getOption('max-retention')))
                 ->setParameter('canceled', Job::STATE_CANCELED)
                 ->setParameter('excludedIds', $excludedIds)
                 ->setMaxResults(100)

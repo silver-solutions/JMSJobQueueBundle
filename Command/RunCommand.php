@@ -19,6 +19,7 @@
 namespace JMS\JobQueueBundle\Command;
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\Persistence\ObjectManager;
 use JMS\JobQueueBundle\Entity\Job;
 use JMS\JobQueueBundle\Entity\Repository\JobManager;
 use JMS\JobQueueBundle\Event\NewOutputEvent;
@@ -32,6 +33,8 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
+use \RuntimeException;
+use \LogicException;
 
 class RunCommand extends Command
 {
@@ -121,7 +124,7 @@ class RunCommand extends Command
         }
 
         if (strlen($workerName) > 50) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 '"worker-name" must not be longer than 50 chars, but got "%s" (%d chars).',
                 $workerName,
                 strlen($workerName)
@@ -149,6 +152,8 @@ class RunCommand extends Command
             $this->queueOptionsDefault,
             $this->queueOptions
         );
+
+        return 0;
     }
 
     private function runJobs($workerName, $startTime, $maxRuntime, $idleTime, $maxJobs, array $restrictedQueues, array $queueOptionsDefaults, array $queueOptions)
@@ -323,7 +328,7 @@ class RunCommand extends Command
                 $data['job']->checked();
                 $em = $this->getEntityManager();
                 $em->persist($data['job']);
-                $em->flush($data['job']);
+                $em->flush();
 
                 continue;
             }
@@ -360,13 +365,13 @@ class RunCommand extends Command
         }
 
         if (Job::STATE_RUNNING !== $newState) {
-            throw new \LogicException(sprintf('Unsupported new state "%s".', $newState));
+            throw new LogicException(sprintf('Unsupported new state "%s".', $newState));
         }
 
         $job->setState(Job::STATE_RUNNING);
         $em = $this->getEntityManager();
         $em->persist($job);
-        $em->flush($job);
+        $em->flush();
 
         $args = $this->getBasicCommandLineArgs();
         $args[] = $job->getCommand();
@@ -443,7 +448,7 @@ class RunCommand extends Command
         return $args;
     }
 
-    private function getEntityManager(): EntityManager
+    private function getEntityManager(): ObjectManager
     {
         return /** @var EntityManager */ $this->registry->getManagerForClass('JMSJobQueueBundle:Job');
     }

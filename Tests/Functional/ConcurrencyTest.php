@@ -5,6 +5,7 @@ namespace JMS\JobQueueBundle\Tests\Functional;
 use Doctrine\ORM\EntityManager;
 use JMS\JobQueueBundle\Entity\Job;
 use Symfony\Component\Process\Process;
+use \RuntimeException;
 
 class ConcurrencyTest extends BaseTestCase
 {
@@ -77,14 +78,14 @@ CONFIG
         $this->importDatabaseSchema();
     }
 
-    protected function tearDown()
+    protected function tearDown():void
     {
         @unlink($this->databaseFile);
         @unlink($this->configFile);
 
         foreach ($this->processes as $process) {
             if ( ! $process->isRunning()) {
-                throw new\ RuntimeException(sprintf('The process "%s" exited prematurely:'."\n\n%s\n\n%s", $process->getCommandLine(), $process->getOutput(), $process->getErrorOutput()));
+                throw new RuntimeException(sprintf('The process "%s" exited prematurely:'."\n\n%s\n\n%s", $process->getCommandLine(), $process->getOutput(), $process->getErrorOutput()));
             }
 
             $process->stop(5);
@@ -110,20 +111,23 @@ CONFIG
                 ->setParameter('nonFinalStates', array(Job::STATE_RUNNING, Job::STATE_NEW, Job::STATE_PENDING))
                 ->getResult();
 
-            throw new \RuntimeException('Not all jobs were processed: '."\n\n".implode("\n\n", $jobs));
+            throw new RuntimeException('Not all jobs were processed: '."\n\n".implode("\n\n", $jobs));
         }
     }
 
     private function startWorker($name)
     {
-        $proc = new Process('exec '.PHP_BINARY.' '.escapeshellarg(__DIR__.'/console').' jms-job-queue:run --worker-name='.$name, null, array(
+        $proc = new Process(
+            ['exec '.PHP_BINARY.' '.
+            escapeshellarg(__DIR__.'/console').
+            ' jms-job-queue:run --worker-name='.$name], null, array(
             'SYMFONY_CONFIG' => $this->configFile,
         ));
         $proc->start();
 
         sleep(2);
         if ( ! $proc->isRunning()) {
-            throw new \RuntimeException(sprintf(
+            throw new RuntimeException(sprintf(
                 "Process '%s' failed to start:\n\n%s\n\n%s",
                 $proc->getCommandLine(),
                 $proc->getOutput(),

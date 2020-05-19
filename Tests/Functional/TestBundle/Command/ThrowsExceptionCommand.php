@@ -2,11 +2,12 @@
 
 namespace JMS\JobQueueBundle\Tests\Functional\TestBundle\Command;
 
-use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
+use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use \RuntimeException;
 
-class ThrowsExceptionCommand extends ContainerAwareCommand
+class ThrowsExceptionCommand extends Command
 {
     protected function configure()
     {
@@ -16,6 +17,6 @@ class ThrowsExceptionCommand extends ContainerAwareCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         var_dump('Throwing exception');
-        throw new \RuntimeException('Something went wrong.');
+        throw new RuntimeException('Something went wrong.');
     }
 }
