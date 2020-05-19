@@ -17,6 +17,8 @@
         "symfony/debug": "^4.0 || ^5.0",
         "doctrine/common": "^2.3",
         "symfony/process": "^4.0 || ^5.0",
+        "doctrine/doctrine-bundle": "*",
+        "doctrine/orm": "*",
         "ext-json": "*",
         "ext-pcntl": "*"
     },
@@ -28,8 +30,6 @@
         "symfony/browser-kit": "*",
         "symfony/finder": "*",
         "symfony/css-selector": "*",
-        "doctrine/doctrine-bundle": "*",
-        "doctrine/orm": "*",
         "symfony/twig-bundle": "*",
         "symfony/form": "*",
         "symfony/validator": "*",
